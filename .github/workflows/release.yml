@@ -1,0 +1,63 @@
+name: Build & Sign
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write    # nécessaire pour créer des releases et uploader des assets
+
+jobs:
+  sign-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install web-ext
+        run: npm install -g web-ext
+
+      - name: Bump version in manifest.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          jq --arg v "$TAG" '.version = $v' manifest.json > manifest.tmp.json
+          mv manifest.tmp.json manifest.json
+          echo "Version bumped to $TAG"
+
+      - name: Sign extension via Mozilla AMO
+        run: |
+          web-ext sign \
+            --api-key="${{ secrets.AMO_JWT_ISSUER }}" \
+            --api-secret="${{ secrets.AMO_JWT_SECRET }}" \
+            --channel=unlisted \
+            --artifacts-dir=dist/
+        # Le .xpi signé sera dans dist/
+
+      - name: Rename .xpi with version tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          XPI=$(ls dist/*.xpi | head -1)
+          mv "$XPI" "dist/ai-bridge-${TAG}.xpi"
+          echo "XPI_PATH=dist/ai-bridge-${TAG}.xpi" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AI Bridge ${{ github.ref_name }}"
+          body: |
+            ## Installation
+
+            1. Télécharger le fichier `ai-bridge-${{ github.ref_name }}.xpi` ci-dessous
+            2. Dans Firefox : **Menu → Modules complémentaires → ⚙ → Installer depuis un fichier**
+            3. Sélectionner le `.xpi` téléchargé → **Ajouter**
+
+            L'extension est installée de façon permanente et survit aux redémarrages.
+          files: ${{ env.XPI_PATH }}
+          fail_on_unmatched_files: true

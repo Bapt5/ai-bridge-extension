@@ -1,0 +1,58 @@
+{
+  "manifest_version": 2,
+  "name": "AI Bridge — Import Conversations",
+  "version": "1.0.1",
+  "description": "Export any AI conversation and import it into another provider. Supports ChatGPT, Gemini, Claude, Copilot, Mistral, Perplexity and Poe.",
+  "homepage_url": "https://github.com/Bapt5/ai-bridge-extension",
+  "author": "Bapt5",
+  "icons": {
+    "48": "icons/icon48.png",
+    "96": "icons/icon96.png"
+  },
+  "browser_action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "48": "icons/icon48.png"
+    },
+    "default_title": "AI Bridge"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://chatgpt.com/*",
+        "*://chat.openai.com/*",
+        "*://gemini.google.com/*",
+        "*://claude.ai/*",
+        "*://copilot.microsoft.com/*",
+        "*://www.bing.com/chat*",
+        "*://poe.com/*",
+        "*://mistral.ai/*",
+        "*://chat.mistral.ai/*",
+        "*://perplexity.ai/*"
+      ],
+      "js": [
+        "content/extractor.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "scripts": [
+      "background/background.js"
+    ],
+    "persistent": false
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "clipboardWrite",
+    "*://gemini.google.com/*"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ai-bridge@bapt5",
+      "strict_min_version": "78.0"
+    }
+  }
+}

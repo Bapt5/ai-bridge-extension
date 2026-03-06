@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Bridge</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d10;
+      --surface: #16161c;
+      --surface2: #1e1e28;
+      --border: #2a2a38;
+      --accent: #7c6cfc;
+      --accent2: #c084fc;
+      --green: #4ade80;
+      --red: #f87171;
+      --text: #e8e8f0;
+      --muted: #7070a0;
+      --radius: 10px;
+    }
+
+    body {
+      width: 420px;
+      min-height: 300px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #13131a, #1a1a26);
+    }
+    .logo {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+      box-shadow: 0 0 16px rgba(124,108,252,0.4);
+    }
+    .header-text h1 {
+      font-size: 15px; font-weight: 800; letter-spacing: -0.3px;
+      background: linear-gradient(90deg, #fff, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .provider-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2px 9px;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      margin-top: 2px;
+    }
+    .provider-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted);
+    }
+    .provider-badge.active .dot { background: var(--green); }
+    .provider-badge.active { color: var(--green); border-color: rgba(74,222,128,0.3); }
+
+    /* ── Main content ── */
+    .content { padding: 14px 18px; }
+
+    /* ── State: unsupported ── */
+    #state-unsupported {
+      text-align: center;
+      padding: 28px 20px;
+      color: var(--muted);
+    }
+    #state-unsupported .big-icon { font-size: 36px; margin-bottom: 10px; }
+    #state-unsupported p { font-size: 12px; line-height: 1.6; }
+    #state-unsupported strong { color: var(--text); }
+
+    /* ── State: main ── */
+    #state-main { display: none; }
+
+    .section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+      color: var(--muted); text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    /* Extract button */
+    .btn-extract {
+      width: 100%;
+      padding: 11px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: var(--radius);
+      color: #fff; font-family: 'Syne', sans-serif;
+      font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      box-shadow: 0 4px 18px rgba(124,108,252,0.35);
+    }
+    .btn-extract:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(124,108,252,0.45); }
+    .btn-extract:active { transform: translateY(0); }
+    .btn-extract:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex; gap: 8px;
+      margin: 12px 0;
+    }
+    .stat-chip {
+      flex: 1;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 10px;
+      text-align: center;
+    }
+    .stat-chip .val {
+      font-size: 20px; font-weight: 800;
+      font-family: 'DM Mono', monospace;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat-chip .lbl {
+      font-size: 10px; color: var(--muted); font-weight: 600; margin-top: 1px;
+    }
+
+    /* Conversation preview */
+    .preview-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .preview-header {
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px; color: var(--muted); font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .preview-scroll {
+      max-height: 130px; overflow-y: auto;
+      padding: 10px 12px;
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      line-height: 1.6; color: var(--text);
+    }
+    .preview-scroll::-webkit-scrollbar { width: 4px; }
+    .preview-scroll::-webkit-scrollbar-track { background: transparent; }
+    .preview-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .msg-user { color: #93c5fd; }
+    .msg-ai { color: #d8b4fe; }
+    .msg-line { margin-bottom: 4px; white-space: pre-wrap; word-break: break-word; }
+
+    /* Prompt section */
+    .prompt-tabs {
+      display: flex; gap: 6px; margin-bottom: 8px;
+    }
+    .tab-btn {
+      padding: 5px 12px;
+      border-radius: 20px; border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted); font-family: 'Syne', sans-serif;
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--surface2);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    #prompt-custom-wrap { display: none; margin-bottom: 8px; }
+    #prompt-custom-wrap textarea {
+      width: 100%; height: 72px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 11px;
+      color: var(--text); font-family: 'DM Mono', monospace; font-size: 11px;
+      line-height: 1.5; resize: none;
+      transition: border-color 0.15s;
+    }
+    #prompt-custom-wrap textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+
+    /* Output area */
+    .output-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .output-header {
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px; color: var(--muted); font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .output-scroll {
+      max-height: 120px; overflow-y: auto;
+      padding: 10px 12px;
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      line-height: 1.6; color: var(--muted);
+      font-style: italic;
+    }
+    .output-scroll.has-content { color: var(--text); font-style: normal; }
+    .output-scroll::-webkit-scrollbar { width: 4px; }
+    .output-scroll::-webkit-scrollbar-track { background: transparent; }
+    .output-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Action buttons */
+    .actions { display: flex; gap: 8px; }
+    .btn-secondary {
+      flex: 1; padding: 9px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text); font-family: 'Syne', sans-serif;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-copy {
+      flex: 2; padding: 9px;
+      background: var(--surface2); border: 1px solid var(--green);
+      border-radius: var(--radius);
+      color: var(--green); font-family: 'Syne', sans-serif;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-copy:hover { background: rgba(74,222,128,0.08); }
+    .btn-copy:disabled { opacity: 0.4; cursor: not-allowed; border-color: var(--border); color: var(--muted); }
+    .btn-copy.copied { border-color: var(--accent2); color: var(--accent2); background: rgba(192,132,252,0.08); }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 7px 16px;
+      font-size: 12px; font-weight: 600;
+      opacity: 0; transition: opacity 0.2s;
+      pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { border-color: var(--green); color: var(--green); }
+    .toast.error { border-color: var(--red); color: var(--red); }
+
+    /* Error state */
+    .error-msg {
+      background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 11px; color: var(--red); line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">⇄</div>
+  <div class="header-text">
+    <h1>AI Bridge</h1>
+    <div class="provider-badge" id="provider-badge">
+      <span class="dot"></span>
+      <span id="provider-name">Détection…</span>
+    </div>
+  </div>
+</div>
+
+<!-- Unsupported state -->
+<div id="state-unsupported" class="content" style="display:none;">
+  <div class="big-icon">🔌</div>
+  <p>Cette page n'est pas un provider IA reconnu.<br><br>
+  Navigue vers <strong>ChatGPT, Gemini, Claude, Copilot, Perplexity</strong> ou <strong>Mistral</strong> pour extraire une conversation.</p>
+</div>
+
+<!-- Main state -->
+<div id="state-main" class="content">
+
+  <!-- Step 1 -->
+  <div class="section-label" style="margin-bottom:8px;">① Extraire la conversation</div>
+  <button class="btn-extract" id="btn-extract">
+    <span>⬇</span> Extraire la conversation
+  </button>
+
+  <div id="cache-indicator" style="display:none;font-size:10px;color:var(--muted);margin-top:6px;text-align:center;font-family:'DM Mono',monospace;cursor:pointer;"></div>
+
+  <div id="extract-error" class="error-msg" style="display:none;margin-top:10px;"></div>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="stats-bar" style="display:none;">
+    <div class="stat-chip">
+      <div class="val" id="stat-msgs">0</div>
+      <div class="lbl">messages</div>
+    </div>
+    <div class="stat-chip">
+      <div class="val" id="stat-user">0</div>
+      <div class="lbl">de toi</div>
+    </div>
+    <div class="stat-chip">
+      <div class="val" id="stat-ai">0</div>
+      <div class="lbl">de l'IA</div>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-wrap" id="preview-wrap" style="display:none;">
+    <div class="preview-header">
+      <span>Aperçu de la conversation</span>
+      <span id="preview-title" style="color:var(--accent);font-family:'DM Mono',monospace;font-size:10px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    </div>
+    <div class="preview-scroll" id="preview-scroll"></div>
+  </div>
+
+  <div class="divider" id="divider-1" style="display:none;"></div>
+
+  <!-- Step 2 -->
+  <div id="prompt-section" style="display:none;">
+    <div class="section-label" style="margin-bottom:8px;">② Choisir le prompt d'import</div>
+    <div class="prompt-tabs">
+      <button class="tab-btn active" id="tab-default">Par défaut</button>
+      <button class="tab-btn" id="tab-custom">Personnalisé</button>
+    </div>
+
+    <div id="prompt-custom-wrap">
+      <textarea id="custom-prompt" placeholder="Écris ton prompt personnalisé ici…&#10;&#10;Tu peux utiliser {{title}}, {{provider}} et {{conversation}} comme variables."></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Step 3 -->
+    <div class="section-label" style="margin-bottom:8px;">③ Prompt final généré</div>
+    <div class="output-wrap">
+      <div class="output-header">
+        <span>Prompt prêt à coller</span>
+        <span id="output-chars" style="font-family:'DM Mono',monospace;font-size:10px;">—</span>
+      </div>
+      <div class="output-scroll" id="output-scroll">
+        Le prompt apparaîtra ici après l'extraction…
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-secondary" id="btn-regen">↺ Regénérer</button>
+      <button class="btn-copy" id="btn-copy">⎘ Copier le prompt</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="popup.js"></script>
+</body>
+</html>
